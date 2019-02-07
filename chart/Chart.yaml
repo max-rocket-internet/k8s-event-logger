@@ -1,0 +1,5 @@
+apiVersion: v1
+appVersion: "1.0"
+version: 0.1.0
+description: Creates deployment that runs a single container to log k8s events to stdout
+name: event-logger
