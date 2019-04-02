@@ -1,6 +1,6 @@
 image:
   repository: deliveryherotech/k8s-event-logger
-  tag: "1.0"
+  tag: "1.1"
   pullPolicy: IfNotPresent
 
 resources:
