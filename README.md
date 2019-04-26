@@ -11,11 +11,6 @@ The problem is that these events are simply API objects in Kubernetes and are on
 
 This simple container and [Helm](https://helm.sh/) chart will run in your cluster, watch for events and print them to stdout in JSON. The assumption is that you already have a daemonset for collecting all pod logs and sending them to a central system, e.g. ELK, Splunk, Graylog etc.
 
-It's based on work in these 2 repositories:
-
-- https://github.com/splunk/fluent-plugin-kubernetes-objects
-- https://github.com/fluent/fluentd-kubernetes-daemonset
-
 ### Installation
 
 Use the [Helm](https://helm.sh/) chart:
