@@ -1,5 +1,5 @@
 image:
-  repository: deliveryherotech/k8s-event-logger
+  repository: tools4k8s/k8s-event-logger
   tag: "1.2"
   pullPolicy: IfNotPresent
 
@@ -15,9 +15,10 @@ env:
   KUBERNETES_API_URL: https://172.20.0.1:443
   CA_FILE: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
 
-
+imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 nodeSelector: {}
 tolerations: []
 affinity: {}
+podLabels: {}
