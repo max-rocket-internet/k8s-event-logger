@@ -2,7 +2,6 @@ package main
 
 import (
   "fmt"
-  "log"
   "os"
   "time"
   "os/user"
@@ -18,7 +17,7 @@ import (
 func main() {
   usr, err := user.Current()
   if err != nil {
-      log.Fatal( err )
+    panic( err )
   }
 
   var config *rest.Config
