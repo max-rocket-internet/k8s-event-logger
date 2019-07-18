@@ -37,3 +37,12 @@ helm install chart/
 ```
 
 Or user the docker image: `tools4k8s/k8s-event-logger`
+
+
+### Testing
+
+Run it:
+
+```
+go run main.go
+```
