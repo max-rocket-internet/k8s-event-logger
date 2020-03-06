@@ -4,6 +4,8 @@
 
 This tool simply watches Kubernetes Events and logs them to stdout in JSON to be collected and stored by your logging solution, e.g. [fluentd](https://github.com/fluent/fluentd-kubernetes-daemonset) or [fluent-bit](https://fluentbit.io/). Other tools exist for persisting Kubernetes Events, such as Sysdig, Datadog or Google's [event-exporter](https://github.com/GoogleCloudPlatform/k8s-stackdriver/tree/master/event-exporter) but this tool is open and will work with any logging solution.
 
+### Why?
+
 Events in Kubernetes log very important information. If are trying to understand what happened in the past then these events show clearly what your Kubernetes cluster was thinking and doing. Some examples:
 
 - Pod events like failed probes, crashes, scheduling related information like `TriggeredScaleUp` or `FailedScheduling`
