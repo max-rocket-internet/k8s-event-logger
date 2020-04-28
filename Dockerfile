@@ -7,7 +7,7 @@ RUN adduser --disabled-login --no-create-home --disabled-password --system --uid
 
 FROM alpine:3.9.3
 RUN addgroup -S non-root && adduser -S -G non-root non-root
-USER non-root
+USER 101
 ENV USER non-root
 COPY --from=builder /go/src/github.com/max-rocket-internet/k8s-event-logger/k8s-event-logger k8s-event-logger
 CMD ["/k8s-event-logger"]
