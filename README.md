@@ -38,8 +38,7 @@ Use the [Helm](https://helm.sh/) chart:
 helm install chart/
 ```
 
-Or user the docker image: `tools4k8s/k8s-event-logger`
-
+Or user the docker image [maxrocketinternet/k8s-event-logger](https://hub.docker.com/r/maxrocketinternet/k8s-event-logger)
 
 ### Testing
 
