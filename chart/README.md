@@ -40,7 +40,7 @@ The following table lists the configurable parameters for this chart and their d
 | Parameter                | Description                          | Default                                                |
 | -------------------------|--------------------------------------|--------------------------------------------------------|
 | `resources`              | Resources for the overprovision pods | `{}`                                                   |
-| `image.repository`       | Image repository                     | `tools4k8s/k8s-event-logger`                           |
+| `image.repository`       | Image repository                     | `maxrocketinternet/k8s-event-logger`                           |
 | `image.tag`              | Image tag                            | `1.2`                                                  |
 | `image.pullPolicy`       | Container pull policy                | `IfNotPresent`                                         |
 | `affinity`               | Map of node/pod affinities           | `{}`                                                   |
