@@ -1,11 +1,11 @@
-FROM golang:1.14.0 as builder
+FROM golang:1.18.3 as builder
 WORKDIR /go/src/github.com/max-rocket-internet/k8s-event-logger
 COPY . .
 RUN go get
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o k8s-event-logger
 RUN adduser --disabled-login --no-create-home --disabled-password --system --uid 101 non-root
 
-FROM alpine:3.9.3
+FROM alpine:3.15.4
 RUN addgroup -S non-root && adduser -S -G non-root non-root
 USER 101
 ENV USER non-root
