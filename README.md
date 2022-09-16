@@ -38,16 +38,14 @@ Use the [Helm](https://helm.sh/) chart:
 helm install chart/
 ```
 
-Or use the docker image [maxrocketinternet/k8s-event-logger][image]
-
-[image]: https://hub.docker.com/r/maxrocketinternet/k8s-event-logger
+Or use the docker image [maxrocketinternet/k8s-event-logger](https://hub.docker.com/r/maxrocketinternet/k8s-event-logger)
 
 #### Building a container image
 
 If you're unable to use the [prebuilt][image] docker image, you can build it yourself:
 
 ```sh
-make IMG=your.docker.registry/k8s-event-logger image
+make IMG=maxrocketinternet/k8s-event-logger TAG=latest
 ```
 
 This uses `docker buildx` to create a [multi-platform image][]. To set up your build host system to be able to build these images, see [this guide][qemu-binfmt].
