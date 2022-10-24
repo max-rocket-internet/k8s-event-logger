@@ -23,7 +23,7 @@ func main() {
 	var config *rest.Config
 
 	if k8s_port := os.Getenv("KUBERNETES_PORT"); k8s_port == "" {
-		fmt.Println("Using local kubeconfig")
+		fmt.Fprintf(os.Stderr,("Using local kubeconfig\n"))
 		var kubeconfig string
 		home := usr.HomeDir
 		if home != "" {
@@ -37,7 +37,7 @@ func main() {
 			panic(err.Error())
 		}
 	} else {
-		fmt.Println("Using in cluster authentication")
+		fmt.Fprintf(os.Stderr,("Using in cluster authentication\n"))
 		config, err = rest.InClusterConfig()
 		if err != nil {
 			panic(err.Error())
