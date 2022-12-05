@@ -32,10 +32,17 @@ Example of events:
 
 ### Installation
 
-Use the [Helm](https://helm.sh/) chart:
+Use the [Helm](https://helm.sh/) chart from this repo:
 
 ```
 helm install chart/
+```
+
+Or use the chart from [deliveryhero/helm-charts/stable/k8s-event-logger](https://github.com/deliveryhero/helm-charts/tree/master/stable/k8s-event-logger):
+
+```
+helm repo add deliveryhero https://charts.deliveryhero.io/
+helm install deliveryhero/k8s-event-logger
 ```
 
 Or use the docker image [maxrocketinternet/k8s-event-logger](https://hub.docker.com/r/maxrocketinternet/k8s-event-logger)
