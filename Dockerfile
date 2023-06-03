@@ -7,7 +7,7 @@ RUN go get
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o k8s-event-logger
 RUN adduser --disabled-login --no-create-home --disabled-password --system --uid 101 non-root
 
-FROM --platform=${TARGETPLATFORM} alpine:3.15.4
+FROM --platform=${TARGETPLATFORM} alpine:3.18.0
 RUN addgroup -S non-root && adduser -S -G non-root non-root
 USER 101
 ENV USER non-root
