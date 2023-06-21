@@ -1,5 +1,5 @@
 IMG ?= maxrocketinternet/k8s-event-logger
-TAG ?= 1.9
+TAG ?= 2.0
 PLATFORMS ?= linux/amd64,linux/arm64
 BUILDXDRIVER ?= docker-container
 WITHSBOM ?= true
