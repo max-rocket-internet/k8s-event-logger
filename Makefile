@@ -19,7 +19,7 @@ buildxbuilder:
 
 .PHONY: image
 image:
-	docker buildx build --builder k8s-event-logger-builder --platform $(PLATFORMS) --sbom=$(WITHSBOM) --push -t $(IMG):$(TAG) .
+	docker buildx build --builder k8s-event-logger-builder --platform $(PLATFORMS) --sbom=$(WITHSBOM) --push -t $(IMG):$(TAG) -t $(IMG):latest .
 
 .PHONY: clean
 clean:
