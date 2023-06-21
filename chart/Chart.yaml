@@ -7,8 +7,6 @@ name: k8s-event-logger
 maintainers:
 - name: max-rocket-internet
   email: max.williams@deliveryhero.com
-- name: mmingorance-dh
-  email: miguel.mingorance@deliveryhero.com
 engine: gotpl
 icon: https://github.com/kubernetes/kubernetes/raw/master/logo/logo.png
 keywords:
