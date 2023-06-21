@@ -8,7 +8,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -16,9 +15,6 @@ import (
 func main() {
 	loggerApplication := log.New(os.Stderr, "", log.LstdFlags)
 	loggerEvent := log.New(os.Stdout, "", 0)
-
-	var err error
-	var config *rest.Config
 
 	// Using First sample from https://pkg.go.dev/k8s.io/client-go/tools/clientcmd to automatically deal with environment variables and default file paths
 
@@ -30,7 +26,7 @@ func main() {
 
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
 
-	config, err = kubeConfig.ClientConfig()
+	config, err := kubeConfig.ClientConfig()
 	if err != nil {
 		loggerApplication.Panicln(err.Error())
 	}
