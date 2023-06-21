@@ -1,6 +1,6 @@
 apiVersion: v1
-appVersion: "1.8"
-version: "1.1.3"
+appVersion: "1.9"
+version: "1.2.0"
 description: A tool to log k8s events to stdout in JSON
 home: https://github.com/max-rocket-internet/k8s-event-logger
 name: k8s-event-logger
@@ -14,6 +14,6 @@ icon: https://github.com/kubernetes/kubernetes/raw/master/logo/logo.png
 keywords:
 - events
 - logging
-- Auditing
+- auditing
 sources:
 - https://github.com/max-rocket-internet/k8s-event-logger

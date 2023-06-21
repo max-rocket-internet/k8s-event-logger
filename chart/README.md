@@ -1,8 +1,8 @@
 # k8s-event-logger
 
-This chart runs a pod that simply watches Kubernetes Events and logs them to stdout in JSON to be collected and stored by your logging solution, e.g. [fluentd](https://github.com/helm/charts/tree/master/stable/fluentd) or [fluent-bit](https://github.com/helm/charts/tree/master/stable/fluent-bit).
+This chart runs a pod that simply watches Kubernetes Events and logs them to stdout in JSON to be collected and stored by your logging solution, e.g. [fluentd](https://github.com/fluent/fluentd-kubernetes-daemonset), [fluent-bit](https://fluentbit.io/), [Filebeat](https://www.elastic.co/guide/en/beats/filebeat/current/running-on-kubernetes.html), or [Promtail](https://grafana.com/docs/loki/latest/clients/promtail/). Other tools exist for persisting Kubernetes Events, such as Sysdig, Datadog, or Google's [event-exporter](https://github.com/GoogleCloudPlatform/k8s-stackdriver/tree/master/event-exporter) but this tool is open and will work with any logging solution.
 
-https://github.com/max-rocket-internet/k8s-event-logger
+[Source code](https://github.com/max-rocket-internet/k8s-event-logger)
 
 Events in Kubernetes log very important information. If are trying to understand what happened in the past then these events show clearly what your Kubernetes cluster was thinking and doing. Some examples:
 
@@ -15,22 +15,22 @@ The problem is that these events are simply API objects in Kubernetes and are on
 
 ## Prerequisites
 
-- Kubernetes 1.8+
+- Kubernetes 1.23+
 
 ## Installing the Chart
 
 To install the chart with the release name `my-release` and default configuration:
 
-```shell
-$ helm install --name my-release stable/k8s-event-logger
+```sh
+helm install --name my-release stable/k8s-event-logger
 ```
 
 ## Uninstalling the Chart
 
 To delete the chart:
 
-```shell
-$ helm delete my-release
+```sh
+helm delete my-release
 ```
 
 ## Configuration
@@ -56,6 +56,6 @@ The following table lists the configurable parameters for this chart and their d
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install` or provide a YAML file containing the values for the above parameters:
 
-```shell
-$ helm install --name my-release stable/k8s-event-logger --values values.yaml
+```sh
+helm install --name my-release stable/k8s-event-logger --values values.yaml
 ```
