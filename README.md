@@ -2,9 +2,9 @@
 
 <img src="https://raw.githubusercontent.com/max-rocket-internet/k8s-event-logger/master/img/k8s-logo.png" width="100">
 
-This tool simply watches Kubernetes Events and logs them to stdout in JSON to be collected and stored by your logging solution, e.g. [fluentd](https://github.com/fluent/fluentd-kubernetes-daemonset) or [fluent-bit](https://fluentbit.io/). Other tools exist for persisting Kubernetes Events, such as Sysdig, Datadog or Google's [event-exporter](https://github.com/GoogleCloudPlatform/k8s-stackdriver/tree/master/event-exporter) but this tool is open and will work with any logging solution.
+This tool simply watches Kubernetes Events and logs them to stdout in JSON to be collected and stored by your logging solution, e.g. [fluentd](https://github.com/fluent/fluentd-kubernetes-daemonset), [fluent-bit](https://fluentbit.io/), [Filebeat](https://www.elastic.co/guide/en/beats/filebeat/current/running-on-kubernetes.html), or [Promtail](https://grafana.com/docs/loki/latest/clients/promtail/). Other tools exist for persisting Kubernetes Events, such as Sysdig, Datadog, or Google's [event-exporter](https://github.com/GoogleCloudPlatform/k8s-stackdriver/tree/master/event-exporter) but this tool is open and will work with any logging solution.
 
-### Why?
+## Why?
 
 Events in Kubernetes log very important information. If are trying to understand what happened in the past then these events show clearly what your Kubernetes cluster was thinking and doing. Some examples:
 
@@ -17,7 +17,7 @@ The problem is that these events are simply API objects in Kubernetes and are on
 
 Example of events:
 
-```
+```text
 39m   Normal  UpdatedLoadBalancer      Service     Updated load balancer with new hosts
 40m   Normal  SuccessfulDelete         DaemonSet   Deleted pod: ingress02-nginx-ingress-controller-vqqjp
 41m   Normal  ScaleDown                Node        node removed by cluster autoscaler
@@ -30,40 +30,46 @@ Example of events:
 58m   Normal  CREATE                   ConfigMap   ConfigMap default/ingress02-nginx-ingress-controller
 ```
 
-### Installation
+## Installation
 
 Use the [Helm](https://helm.sh/) chart from this repo:
 
-```
+```sh
 helm install chart/
 ```
 
 Or use the chart from [deliveryhero/helm-charts/stable/k8s-event-logger](https://github.com/deliveryhero/helm-charts/tree/master/stable/k8s-event-logger):
 
-```
+```sh
 helm repo add deliveryhero https://charts.deliveryhero.io/
 helm install deliveryhero/k8s-event-logger
 ```
 
-Or use the docker image [maxrocketinternet/k8s-event-logger](https://hub.docker.com/r/maxrocketinternet/k8s-event-logger)
+Or use the pre-built image [maxrocketinternet/k8s-event-logger][pre-built image]
 
-#### Building a container image
+### Building a container image
 
-If you're unable to use the [prebuilt][image] docker image, you can build it yourself:
+If you're unable to use the [pre-built image], you can build it yourself:
 
 ```sh
-make IMG=maxrocketinternet/k8s-event-logger TAG=latest
+make all IMG=<your-container-registry>/k8s-event-logger TAG=latest
 ```
 
-This uses `docker buildx` to create a [multi-platform image][]. To set up your build host system to be able to build these images, see [this guide][qemu-binfmt].
+This uses `docker buildx` to create a [multi-platform image]. To set up your build host system to be able to build these images, see [this guide][multi-platform image] or `make all` and review the Makefile for what it does.
 
 [multi-platform image]: https://docs.docker.com/build/building/multi-platform/
-[qemu-binfmt]: https://docs.nvidia.com/datacenter/cloud-native/playground/x-arch.html
+[pre-built image]: https://hub.docker.com/r/maxrocketinternet/k8s-event-logger
 
-### Testing
+Or to just build locally for testing without multi-arch support (but also doesn't require a registry):
+
+```sh
+docker build --tag localhost/k8s-event-logger .
+```
+
+## Testing
 
 Run it:
 
-```
+```sh
 go run main.go
 ```
