@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -15,7 +16,13 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+var (
+	ignoreNormal = flag.Bool("ignore_normal", false, "ignore events of the normal type, they can be noisy")
+)
+
 func main() {
+	flag.Parse()
+
 	loggerApplication := log.New(os.Stderr, "", log.LstdFlags)
 	loggerEvent := log.New(os.Stdout, "", 0)
 
@@ -65,6 +72,9 @@ func main() {
 		0,
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
+				if (*ignoreNormal && obj.(corev1.Event).Type == corev1.EventTypeNormal) {
+					return
+				}
 				j, _ := json.Marshal(obj)
 				loggerEvent.Printf("%s\n", string(j))
 			},
