@@ -72,7 +72,7 @@ func main() {
 		0,
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
-				if (*ignoreNormal && obj.(corev1.Event).Type == corev1.EventTypeNormal) {
+				if (*ignoreNormal && obj.(*corev1.Event).Type == corev1.EventTypeNormal) {
 					return
 				}
 				j, _ := json.Marshal(obj)
