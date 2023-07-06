@@ -11,10 +11,7 @@ resources:
     cpu: 100m
     memory: 128Mi
 
-env:
-  KUBERNETES_API_URL: https://172.20.0.1:443
-  CA_FILE: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-
+env: {}
 imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
@@ -23,3 +20,14 @@ tolerations: []
 affinity: {}
 podLabels: {}
 podAnnotations: {}
+securityContext:
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 10001
+  runAsGroup: 10001
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  seccompProfile:
+    type: RuntimeDefault
