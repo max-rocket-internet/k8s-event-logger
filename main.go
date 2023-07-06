@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	ignoreNormal = flag.Bool("ignore_normal", false, "ignore events of the normal type, they can be noisy")
+	ignoreNormal = flag.Bool("ignore-normal", false, "ignore events of type 'Normal' to reduce noise")
 )
 
 func main() {
