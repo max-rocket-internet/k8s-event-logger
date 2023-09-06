@@ -1,6 +1,6 @@
 image:
   repository: maxrocketinternet/k8s-event-logger
-  tag: "2.0"
+  tag: "2.2"
   pullPolicy: IfNotPresent
 
 resources:
@@ -12,6 +12,7 @@ resources:
     memory: 128Mi
 
 env: {}
+args: []
 imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
