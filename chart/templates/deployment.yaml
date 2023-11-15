@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "k8s-event-logger.fullname" . }}
+  namespace: {{ .Release.Namespace }}
   labels:
 {{ include "k8s-event-logger.labels" . | indent 4 }}
 spec:
