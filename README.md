@@ -45,6 +45,13 @@ helm repo add deliveryhero https://charts.deliveryhero.io/
 helm install deliveryhero/k8s-event-logger
 ```
 
+Or use helm chart from github pages:
+
+```sh
+helm repo add k8s-event-logger https://max-rocket-internet.github.io/k8s-event-logger
+helm install k8s-event-logger/k8s-event-logger
+```
+
 Or use the pre-built image [maxrocketinternet/k8s-event-logger][pre-built image]
 
 ### Building a container image
