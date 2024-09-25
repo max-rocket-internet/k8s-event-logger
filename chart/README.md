@@ -30,7 +30,7 @@ The following table lists the configurable parameters for this chart and their d
 | -------------------------|--------------------------------------|--------------------------------------------------------|
 | `resources`              | Resources for the overprovision pods | `{}`                                                   |
 | `image.repository`       | Image repository                     | `maxrocketinternet/k8s-event-logger`                   |
-| `image.tag`              | Image tag                            | `2.0`                                                  |
+| `image.tag`              | Image tag                            | `2.3`                                                  |
 | `image.pullPolicy`       | Container pull policy                | `IfNotPresent`                                         |
 | `affinity`               | Map of node/pod affinities           | `{}`                                                   |
 | `nodeSelector`           | Node labels for pod assignment       | `{}`                                                   |
