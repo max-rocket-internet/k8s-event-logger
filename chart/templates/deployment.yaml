@@ -4,7 +4,8 @@ metadata:
   name: {{ include "k8s-event-logger.fullname" . }}
   namespace: {{ .Release.Namespace }}
   labels:
-{{ include "k8s-event-logger.labels" . | indent 4 }}
+    app.kubernetes.io/name: {{ include "k8s-event-logger.name" . }}
+    {{- include "k8s-event-logger.labels" . | nindent 4 }}
 spec:
   replicas: 1
   selector:
