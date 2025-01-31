@@ -38,12 +38,7 @@ Use the [Helm](https://helm.sh/) chart from this repo:
 helm install chart/
 ```
 
-Or use the chart from [deliveryhero/helm-charts/stable/k8s-event-logger](https://github.com/deliveryhero/helm-charts/tree/master/stable/k8s-event-logger):
-
-```sh
-helm repo add deliveryhero https://charts.deliveryhero.io/
-helm install deliveryhero/k8s-event-logger
-```
+Or use the chart from [deliveryhero/helm-charts/stable/k8s-event-logger](https://github.com/deliveryhero/helm-charts/tree/master/stable/k8s-event-logger).
 
 Or use the pre-built image [maxrocketinternet/k8s-event-logger][pre-built image]
 
