@@ -15,6 +15,7 @@ import (
 
 var (
 	ignoreNormal = flag.Bool("ignore-normal", false, "ignore events of type 'Normal' to reduce noise")
+	ignoreUpdate = flag.Bool("ignore-update", true, "ignore update of events")
 )
 
 func main() {
@@ -58,11 +59,16 @@ func main() {
 		0,
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
-				if (*ignoreNormal && obj.(*corev1.Event).Type == corev1.EventTypeNormal) {
+				if *ignoreNormal && obj.(*corev1.Event).Type == corev1.EventTypeNormal {
 					return
 				}
-				j, _ := json.Marshal(obj)
-				loggerEvent.Printf("%s\n", string(j))
+				logEvent(obj, loggerEvent)
+			},
+			UpdateFunc: func(oldObj, newObj interface{}) {
+				if *ignoreUpdate || (*ignoreNormal && newObj.(*corev1.Event).Type == corev1.EventTypeNormal) {
+					return
+				}
+				logEvent(newObj, loggerEvent)
 			},
 		},
 	)
@@ -71,4 +77,9 @@ func main() {
 	defer close(stop)
 	go controller.Run(stop)
 	select {}
+}
+
+func logEvent(obj interface{}, logger *log.Logger) {
+	j, _ := json.Marshal(obj)
+	logger.Printf("%s\n", string(j))
 }
