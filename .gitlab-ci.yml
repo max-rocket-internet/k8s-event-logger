@@ -1,0 +1,36 @@
+image: public.ecr.aws/r3m4q3r9/qovery-ci:engine-2025-01-03T13-54-40
+services:
+  - docker:dind
+variables:
+  FF_GITLAB_REGISTRY_HELPER_IMAGE: 1
+  DOCKER_DRIVER: overlay2
+  DOCKER_HOST: tcp://localhost:2375
+  DOCKER_BUILDKIT: 1
+  DOCKER_TLS_CERTDIR: ""
+  DOCKER_IMAGE_NAME: $AWS_PROD_ECR_PUBLIC_REGISTRY/k8s-event-logger-rs
+  IMAGE_TAG_NAME: $CI_COMMIT_SHORT_SHA
+  IMAGE_COMMIT_SHA: $CI_COMMIT_SHA
+  IMAGE_STORE: $CI_PROJECT_DIR/docker_image
+stages:
+  - build
+  - release
+
+build-image:
+  stage: release
+  before_script:
+    - ci_helper init_buildkit_builder "${CI_JOB_NAME}" 4 7
+    - ci_helper docker_login_public_prod_ecr
+  after_script:
+    - ci_helper teardown_buildkit_builder "${CI_JOB_NAME}"
+  script:
+    - |-
+      eval $(ci_helper print_aws_ctx 'CI_BUILDER')
+      docker buildx build --platform=linux/amd64,linux/arm64 \
+        -t $DOCKER_IMAGE_NAME:$IMAGE_TAG_NAME \
+        --push .
+  interruptible: true
+  when: manual
+  tags:
+    - vm-250mcpu-1gmem-0g
+  only:
+    - master
