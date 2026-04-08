@@ -5,6 +5,8 @@ import (
 	"flag"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -20,20 +22,20 @@ var (
 )
 
 func logEvent(obj interface{}, ignoreNormal bool, logger *log.Logger) {
+	var eventType string
 	switch e := obj.(type) {
 	case *corev1.Event:
-		if ignoreNormal && e.Type == corev1.EventTypeNormal {
-			return
-		}
-		j, _ := json.Marshal(e)
-		logger.Printf("%s\n", string(j))
+		eventType = e.Type
 	case *eventsv1.Event:
-		if ignoreNormal && e.Type == corev1.EventTypeNormal {
-			return
-		}
-		j, _ := json.Marshal(e)
-		logger.Printf("%s\n", string(j))
+		eventType = e.Type
+	default:
+		return
 	}
+	if ignoreNormal && eventType == corev1.EventTypeNormal {
+		return
+	}
+	j, _ := json.Marshal(obj)
+	logger.Printf("%s\n", string(j))
 }
 
 func main() {
@@ -50,7 +52,8 @@ func main() {
 	if err != nil {
 		loggerApplication.Panicln(err.Error())
 	}
-	loggerApplication.Println("Using configuration:", config.String())
+
+	// loggerApplication.Println("Using configuration:", config.String())
 
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
@@ -61,43 +64,45 @@ func main() {
 		logEvent(obj, *ignoreNormal, loggerEvent)
 	}
 
-	// Informer A: core/v1 events
 	coreV1watchlist := cache.NewListWatchFromClient(
 		clientset.CoreV1().RESTClient(),
 		"events",
 		corev1.NamespaceAll,
 		fields.Everything(),
 	)
-	_, coreV1controller := cache.NewInformer(
-		coreV1watchlist,
-		&corev1.Event{},
-		5*time.Minute,
-		cache.ResourceEventHandlerFuncs{
+	_, coreV1controller := cache.NewInformerWithOptions(cache.InformerOptions{
+		ListerWatcher: coreV1watchlist,
+		ObjectType:    &corev1.Event{},
+		ResyncPeriod:  5 * time.Minute,
+		Handler: cache.ResourceEventHandlerFuncs{
 			AddFunc:    handler,
 			UpdateFunc: func(_, newObj interface{}) { handler(newObj) },
 		},
-	)
+	})
 
-	// Informer B: events.k8s.io/v1 events
 	eventsV1watchlist := cache.NewListWatchFromClient(
 		clientset.EventsV1().RESTClient(),
 		"events",
 		corev1.NamespaceAll,
 		fields.Everything(),
 	)
-	_, eventsV1controller := cache.NewInformer(
-		eventsV1watchlist,
-		&eventsv1.Event{},
-		5*time.Minute,
-		cache.ResourceEventHandlerFuncs{
+	_, eventsV1controller := cache.NewInformerWithOptions(cache.InformerOptions{
+		ListerWatcher: eventsV1watchlist,
+		ObjectType:    &eventsv1.Event{},
+		ResyncPeriod:  5 * time.Minute,
+		Handler: cache.ResourceEventHandlerFuncs{
 			AddFunc:    handler,
 			UpdateFunc: func(_, newObj interface{}) { handler(newObj) },
 		},
-	)
+	})
 
 	stop := make(chan struct{})
-	defer close(stop)
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGTERM, syscall.SIGINT)
+	defer signal.Stop(sigCh)
+
 	go coreV1controller.Run(stop)
 	go eventsV1controller.Run(stop)
-	select {}
+	<-sigCh
+	close(stop)
 }
