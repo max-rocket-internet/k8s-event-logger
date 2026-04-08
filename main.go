@@ -7,6 +7,7 @@ import (
 	"os"
 
 	corev1 "k8s.io/api/core/v1"
+	eventsv1 "k8s.io/api/events/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
@@ -16,6 +17,23 @@ import (
 var (
 	ignoreNormal = flag.Bool("ignore-normal", false, "ignore events of type 'Normal' to reduce noise")
 )
+
+func logEvent(obj interface{}, ignoreNormal bool, logger *log.Logger) {
+	switch e := obj.(type) {
+	case *corev1.Event:
+		if ignoreNormal && e.Type == corev1.EventTypeNormal {
+			return
+		}
+		j, _ := json.Marshal(e)
+		logger.Printf("%s\n", string(j))
+	case *eventsv1.Event:
+		if ignoreNormal && e.Type == corev1.EventTypeNormal {
+			return
+		}
+		j, _ := json.Marshal(e)
+		logger.Printf("%s\n", string(j))
+	}
+}
 
 func main() {
 	flag.Parse()
