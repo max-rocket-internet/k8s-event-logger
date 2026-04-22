@@ -1,7 +1,7 @@
 image:
   containerName: app
   repository: maxrocketinternet/k8s-event-logger
-  tag: "2.3"
+  tag: "2.6"
   pullPolicy: IfNotPresent
 
 resources:
