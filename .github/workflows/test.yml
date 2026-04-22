@@ -48,12 +48,17 @@ jobs:
         with:
           cluster_name: "test-cluster"
           wait: 120s
+          config: test/kind-config.yaml
 
       - name: Get cluster info
         run: |
           kubectl cluster-info
           kubectl get nodes
           kubectl get pods -A
+          # Ensure kubeconfig exists and is accessible
+          mkdir -p ${{ runner.temp }}
+          kind get kubeconfig --name test-cluster > ${{ runner.temp }}/kubeconfig
+          ls -la ${{ runner.temp }}/kubeconfig
 
       - name: Run integration tests
         run: make integration-test
