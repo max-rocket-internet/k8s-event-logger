@@ -25,3 +25,11 @@ image:
 clean:
 	-docker rmi $(IMG):$(TAG)
 	-docker buildx rm k8s-event-logger-builder
+
+.PHONY: test
+test:
+	go test ./...
+
+.PHONY: integration-test
+integration-test:
+	go test -v -run TestIntegration

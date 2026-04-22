@@ -63,8 +63,40 @@ docker build --tag localhost/k8s-event-logger .
 
 ## Testing
 
-Run it:
+### Unit Tests
+
+Run the unit tests:
+
+```sh
+make test
+```
+
+### Integration Tests
+
+The project includes integration tests that run the event logger against a real Kubernetes cluster. These tests require a running Kubernetes cluster and the `KUBECONFIG` environment variable to be set.
+
+To run the integration tests:
+
+```sh
+make integration-test
+```
+
+The integration tests automatically test both normal operation and operation with the `-ignore-normal` flag enabled.
+
+### Manual Testing
+
+Run it locally:
 
 ```sh
 go run main.go
 ```
+
+With the `-ignore-normal` flag to reduce noise:
+
+```sh
+go run main.go -ignore-normal
+```
+
+### CI/CD Testing
+
+The GitHub Actions workflow automatically runs both unit tests and integration tests against a Kind cluster for every pull request and push to the main branch. The integration tests verify that the event logger can properly connect to a Kubernetes cluster and capture events.
