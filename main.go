@@ -5,8 +5,12 @@ import (
 	"flag"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	eventsv1 "k8s.io/api/events/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
@@ -17,20 +21,31 @@ var (
 	ignoreNormal = flag.Bool("ignore-normal", false, "ignore events of type 'Normal' to reduce noise")
 )
 
+func logEvent(obj interface{}, ignoreNormal bool, logger *log.Logger) {
+	var eventType string
+	switch e := obj.(type) {
+	case *corev1.Event:
+		eventType = e.Type
+	case *eventsv1.Event:
+		eventType = e.Type
+	default:
+		return
+	}
+	if ignoreNormal && eventType == corev1.EventTypeNormal {
+		return
+	}
+	j, _ := json.Marshal(obj)
+	logger.Printf("%s\n", string(j))
+}
+
 func main() {
 	flag.Parse()
 
 	loggerApplication := log.New(os.Stderr, "", log.LstdFlags)
 	loggerEvent := log.New(os.Stdout, "", 0)
 
-	// Using First sample from https://pkg.go.dev/k8s.io/client-go/tools/clientcmd to automatically deal with environment variables and default file paths
-
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-	// if you want to change the loading rules (which files in which order), you can do so here
-
 	configOverrides := &clientcmd.ConfigOverrides{}
-	// if you want to change override values or bind them to flags, there are methods to help you
-
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
 
 	config, err := kubeConfig.ClientConfig()
@@ -38,37 +53,56 @@ func main() {
 		loggerApplication.Panicln(err.Error())
 	}
 
-	// Note that this *should* automatically sanitize sensitive fields
-	loggerApplication.Println("Using configuration:", config.String())
+	// loggerApplication.Println("Using configuration:", config.String())
 
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		loggerApplication.Panicln(err.Error())
 	}
 
-	watchlist := cache.NewListWatchFromClient(
+	handler := func(obj interface{}) {
+		logEvent(obj, *ignoreNormal, loggerEvent)
+	}
+
+	coreV1watchlist := cache.NewListWatchFromClient(
 		clientset.CoreV1().RESTClient(),
 		"events",
 		corev1.NamespaceAll,
 		fields.Everything(),
 	)
-	_, controller := cache.NewInformer(
-		watchlist,
-		&corev1.Event{},
-		0,
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-				if (*ignoreNormal && obj.(*corev1.Event).Type == corev1.EventTypeNormal) {
-					return
-				}
-				j, _ := json.Marshal(obj)
-				loggerEvent.Printf("%s\n", string(j))
-			},
+	_, coreV1controller := cache.NewInformerWithOptions(cache.InformerOptions{
+		ListerWatcher: coreV1watchlist,
+		ObjectType:    &corev1.Event{},
+		ResyncPeriod:  5 * time.Minute,
+		Handler: cache.ResourceEventHandlerFuncs{
+			AddFunc:    handler,
+			UpdateFunc: func(_, newObj interface{}) { handler(newObj) },
 		},
+	})
+
+	eventsV1watchlist := cache.NewListWatchFromClient(
+		clientset.EventsV1().RESTClient(),
+		"events",
+		corev1.NamespaceAll,
+		fields.Everything(),
 	)
+	_, eventsV1controller := cache.NewInformerWithOptions(cache.InformerOptions{
+		ListerWatcher: eventsV1watchlist,
+		ObjectType:    &eventsv1.Event{},
+		ResyncPeriod:  5 * time.Minute,
+		Handler: cache.ResourceEventHandlerFuncs{
+			AddFunc:    handler,
+			UpdateFunc: func(_, newObj interface{}) { handler(newObj) },
+		},
+	})
 
 	stop := make(chan struct{})
-	defer close(stop)
-	go controller.Run(stop)
-	select {}
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGTERM, syscall.SIGINT)
+	defer signal.Stop(sigCh)
+
+	go coreV1controller.Run(stop)
+	go eventsV1controller.Run(stop)
+	<-sigCh
+	close(stop)
 }
