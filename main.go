@@ -11,6 +11,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	eventsv1 "k8s.io/api/events/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
@@ -23,17 +24,27 @@ var (
 
 func logEvent(obj interface{}, ignoreNormal bool, logger *log.Logger) {
 	var eventType string
+	var metadata *metav1.ObjectMeta
+	
 	switch e := obj.(type) {
 	case *corev1.Event:
 		eventType = e.Type
+		metadata = &e.ObjectMeta
 	case *eventsv1.Event:
 		eventType = e.Type
+		metadata = &e.ObjectMeta
 	default:
 		return
 	}
 	if ignoreNormal && eventType == corev1.EventTypeNormal {
 		return
 	}
+	
+	// Clear managedFields to reduce noise
+	if metadata != nil {
+		metadata.ManagedFields = nil
+	}
+	
 	j, _ := json.Marshal(obj)
 	logger.Printf("%s\n", string(j))
 }
