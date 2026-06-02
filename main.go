@@ -7,11 +7,8 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
-	corev1 "k8s.io/api/core/v1"
 	eventsv1 "k8s.io/api/events/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
@@ -22,30 +19,18 @@ var (
 	ignoreNormal = flag.Bool("ignore-normal", false, "ignore events of type 'Normal' to reduce noise")
 )
 
-func logEvent(obj interface{}, ignoreNormal bool, logger *log.Logger) {
-	var eventType string
-	var metadata *metav1.ObjectMeta
-	
-	switch e := obj.(type) {
-	case *corev1.Event:
-		eventType = e.Type
-		metadata = &e.ObjectMeta
-	case *eventsv1.Event:
-		eventType = e.Type
-		metadata = &e.ObjectMeta
-	default:
+func logEvent(obj any, ignoreNormal bool, logger *log.Logger) {
+	event, ok := obj.(*eventsv1.Event)
+	if !ok {
 		return
 	}
-	if ignoreNormal && eventType == corev1.EventTypeNormal {
+	if ignoreNormal && event.Type == "Normal" {
 		return
 	}
-	
-	// Clear managedFields to reduce noise
-	if metadata != nil {
-		metadata.ManagedFields = nil
-	}
-	
-	j, _ := json.Marshal(obj)
+
+	event.ManagedFields = nil
+
+	j, _ := json.Marshal(event)
 	logger.Printf("%s\n", string(j))
 }
 
@@ -71,39 +56,21 @@ func main() {
 		loggerApplication.Panicln(err.Error())
 	}
 
-	handler := func(obj interface{}) {
+	handler := func(obj any) {
 		logEvent(obj, *ignoreNormal, loggerEvent)
 	}
-
-	coreV1watchlist := cache.NewListWatchFromClient(
-		clientset.CoreV1().RESTClient(),
-		"events",
-		corev1.NamespaceAll,
-		fields.Everything(),
-	)
-	_, coreV1controller := cache.NewInformerWithOptions(cache.InformerOptions{
-		ListerWatcher: coreV1watchlist,
-		ObjectType:    &corev1.Event{},
-		ResyncPeriod:  5 * time.Minute,
-		Handler: cache.ResourceEventHandlerFuncs{
-			AddFunc:    handler,
-			UpdateFunc: func(_, newObj interface{}) { handler(newObj) },
-		},
-	})
 
 	eventsV1watchlist := cache.NewListWatchFromClient(
 		clientset.EventsV1().RESTClient(),
 		"events",
-		corev1.NamespaceAll,
+		"",
 		fields.Everything(),
 	)
 	_, eventsV1controller := cache.NewInformerWithOptions(cache.InformerOptions{
 		ListerWatcher: eventsV1watchlist,
 		ObjectType:    &eventsv1.Event{},
-		ResyncPeriod:  5 * time.Minute,
 		Handler: cache.ResourceEventHandlerFuncs{
-			AddFunc:    handler,
-			UpdateFunc: func(_, newObj interface{}) { handler(newObj) },
+			AddFunc: handler,
 		},
 	})
 
@@ -112,7 +79,6 @@ func main() {
 	signal.Notify(sigCh, syscall.SIGTERM, syscall.SIGINT)
 	defer signal.Stop(sigCh)
 
-	go coreV1controller.Run(stop)
 	go eventsV1controller.Run(stop)
 	<-sigCh
 	close(stop)

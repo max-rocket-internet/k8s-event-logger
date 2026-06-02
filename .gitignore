@@ -19,3 +19,4 @@ vendor/
 
 # Go workspace file
 go.work
+k8s-event-logger
