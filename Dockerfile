@@ -1,4 +1,4 @@
-FROM --platform=${BUILDPLATFORM} golang:1.25 as builder
+FROM --platform=${BUILDPLATFORM} golang:1.26 as builder
 ARG TARGETARCH
 ARG TARGETOS
 WORKDIR /go/src/github.com/max-rocket-internet/k8s-event-logger
