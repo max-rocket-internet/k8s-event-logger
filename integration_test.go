@@ -3,12 +3,22 @@ package main
 import (
 	"bytes"
 	"context"
+	"errors"
+	"fmt"
+	"io"
+	"net"
+	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"regexp"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	eventsv1 "k8s.io/api/events/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -183,4 +193,201 @@ func TestIntegration(t *testing.T) {
 			t.Logf("Stderr output: %s", stderr)
 		}
 	})
+}
+
+// buildBinary builds the event logger into a temporary directory and returns its path.
+func buildBinary(t *testing.T) string {
+	t.Helper()
+	bin := filepath.Join(t.TempDir(), "k8s-event-logger")
+	out, err := exec.Command("go", "build", "-o", bin, ".").CombinedOutput()
+	if err != nil {
+		t.Fatalf("go build: %v\n%s", err, out)
+	}
+	return bin
+}
+
+// TestMetricsAddressInUse_ExitsNonZero checks that the event logger exits with an
+// error when it cannot listen on the metrics address. It needs no cluster.
+func TestMetricsAddressInUse_ExitsNonZero(t *testing.T) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen: %v", err)
+	}
+	defer ln.Close()
+
+	bin := buildBinary(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	var stderr bytes.Buffer
+	cmd := exec.CommandContext(ctx, bin, "-metrics-address="+ln.Addr().String())
+	cmd.Stderr = &stderr
+	err = cmd.Run()
+
+	var exitErr *exec.ExitError
+	if !errors.As(err, &exitErr) {
+		t.Fatalf("expected the event logger to exit with an error, got %v (stderr: %s)", err, stderr.String())
+	}
+	if code := exitErr.ExitCode(); code != 1 {
+		t.Errorf("exit code %d, want 1 (stderr: %s)", code, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "address already in use") {
+		t.Errorf("stderr does not mention the bind error: %s", stderr.String())
+	}
+}
+
+func TestMetricsAddressMalformed_ExitsNonZero(t *testing.T) {
+	bin := buildBinary(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	var stderr bytes.Buffer
+	cmd := exec.CommandContext(ctx, bin, "-metrics-address=foo")
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+
+	var exitErr *exec.ExitError
+	if !errors.As(err, &exitErr) {
+		t.Fatalf("expected the event logger to exit with an error, got %v (stderr: %s)", err, stderr.String())
+	}
+	if code := exitErr.ExitCode(); code != 1 {
+		t.Errorf("exit code %d, want 1 (stderr: %s)", code, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "missing port in address") {
+		t.Errorf("stderr does not mention the address error: %s", stderr.String())
+	}
+}
+
+// metricValue returns the sum of the values of all lines in a Prometheus text
+// exposition that match re, and whether any line matched.
+func metricValue(exposition string, re *regexp.Regexp) (float64, bool) {
+	var sum float64
+	var found bool
+	for _, m := range re.FindAllStringSubmatch(exposition, -1) {
+		v, err := strconv.ParseFloat(m[1], 64)
+		if err != nil {
+			continue
+		}
+		sum += v
+		found = true
+	}
+	return sum, found
+}
+
+var (
+	reWarningEvents = regexp.MustCompile(`(?m)^k8s_event_logger_events_total\{type="Warning"\} (\S+)$`)
+	reWarningBytes  = regexp.MustCompile(`(?m)^k8s_event_logger_written_bytes_total\{type="Warning"\} (\S+)$`)
+	reGet200        = regexp.MustCompile(`(?m)^rest_client_requests_total\{code="200",host="[^"]*",method="GET"\} (\S+)$`)
+	reBuildInfoDev  = regexp.MustCompile(`(?m)^k8s_event_logger_build_info\{goversion="[^"]+",version="dev"\} (\S+)$`)
+)
+
+// TestIntegrationMetrics runs the event logger with -metrics-address against a
+// real Kubernetes cluster and checks the metrics it serves.
+// This test requires a running Kubernetes cluster and KUBECONFIG to be set.
+func TestIntegrationMetrics(t *testing.T) {
+	kubeconfig := os.Getenv("KUBECONFIG")
+	if kubeconfig == "" {
+		t.Skip("KUBECONFIG environment variable not set")
+	}
+
+	// Pick a free loopback address.
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen: %v", err)
+	}
+	addr := ln.Addr().String()
+	ln.Close()
+
+	bin := buildBinary(t)
+	var stdout, stderr bytes.Buffer
+	cmd := exec.Command(bin, "-metrics-address="+addr)
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Start(); err != nil {
+		t.Fatalf("starting the event logger: %v", err)
+	}
+	stopped := false
+	stop := func() {
+		if stopped {
+			return
+		}
+		stopped = true
+		_ = cmd.Process.Kill()
+		_ = cmd.Wait()
+	}
+	t.Cleanup(stop)
+
+	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	if err != nil {
+		t.Fatalf("loading kubeconfig: %v", err)
+	}
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		t.Fatalf("creating client: %v", err)
+	}
+
+	event := &eventsv1.Event{
+		ObjectMeta:          metav1.ObjectMeta{GenerateName: "event-logger-metrics-test-"},
+		EventTime:           metav1.NowMicro(),
+		ReportingController: "k8s-event-logger-test",
+		ReportingInstance:   "test",
+		Action:              "Testing",
+		Reason:              "MetricsTest",
+		Type:                "Warning",
+		Note:                "created by TestIntegrationMetrics",
+		Regarding: corev1.ObjectReference{
+			APIVersion: "v1",
+			Kind:       "Namespace",
+			Name:       "default",
+		},
+	}
+	created, err := clientset.EventsV1().Events("default").Create(context.Background(), event, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatalf("creating event: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = clientset.EventsV1().Events("default").Delete(context.Background(), created.Name, metav1.DeleteOptions{})
+	})
+
+	url := fmt.Sprintf("http://%s/metrics", addr)
+	var last string
+	var problems []string
+	deadline := time.Now().Add(30 * time.Second)
+	for time.Now().Before(deadline) {
+		time.Sleep(time.Second)
+		resp, err := http.Get(url)
+		if err != nil {
+			problems = []string{fmt.Sprintf("GET %s: %v", url, err)}
+			continue
+		}
+		body, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		last = string(body)
+
+		problems = nil
+		if v, _ := metricValue(last, reWarningEvents); v < 1 {
+			problems = append(problems, fmt.Sprintf(`k8s_event_logger_events_total{type="Warning"} = %v, want >= 1`, v))
+		}
+		if v, _ := metricValue(last, reWarningBytes); v <= 0 {
+			problems = append(problems, fmt.Sprintf(`k8s_event_logger_written_bytes_total{type="Warning"} = %v, want > 0`, v))
+		}
+		if v, _ := metricValue(last, reGet200); v < 2 {
+			problems = append(problems, fmt.Sprintf(`sum(rest_client_requests_total{code="200",method="GET"}) = %v, want >= 2`, v))
+		}
+		if v, ok := metricValue(last, reBuildInfoDev); !ok || v != 1 {
+			problems = append(problems, `k8s_event_logger_build_info{version="dev"} 1 not found`)
+		}
+		if len(problems) == 0 {
+			break
+		}
+	}
+	if len(problems) > 0 {
+		t.Fatalf("metrics not as expected after 30s:\n  %s\nlast scrape:\n%s\nstderr:\n%s",
+			strings.Join(problems, "\n  "), last, stderr.String())
+	}
+
+	stop()
+	if !strings.Contains(stdout.String(), `"reason":"MetricsTest"`) {
+		t.Errorf("stdout does not contain the test event; stderr:\n%s", stderr.String())
+	}
 }
