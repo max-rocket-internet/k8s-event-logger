@@ -61,6 +61,24 @@ Or to just build locally for testing without multi-arch support (but also doesn'
 docker build --tag localhost/k8s-event-logger .
 ```
 
+## Metrics
+
+Prometheus metrics are off by default. Start the logger with `-metrics-address` to serve them on `/metrics`:
+
+```sh
+k8s-event-logger -metrics-address=:8080
+```
+
+| Metric | Type | Labels | Meaning |
+|--------|------|--------|---------|
+| `go_*`, `process_*` | — | — | Go runtime and process metrics |
+| `k8s_event_logger_build_info` | gauge, always 1 | `version`, `goversion` | Build version and Go version |
+| `k8s_event_logger_events_total` | counter | `type` (`Normal`, `Warning`, `Other`) | Events written to stdout |
+| `k8s_event_logger_written_bytes_total` | counter | `type` (`Normal`, `Warning`, `Other`) | Bytes written to stdout for those events, trailing newline included |
+| `rest_client_requests_total` | counter | `code`, `method`, `host` | Requests to the Kubernetes API by result |
+
+Events dropped by `-ignore-normal` are not counted. `rest_client_requests_total` reports both the list and the watch requests as `method="GET"`; API errors show up in `code`.
+
 ## Testing
 
 ### Unit Tests
