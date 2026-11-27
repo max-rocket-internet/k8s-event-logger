@@ -1,7 +1,7 @@
 image:
   containerName: app
   repository: maxrocketinternet/k8s-event-logger
-  tag: "2.6"
+  tag: "3.1"
   pullPolicy: IfNotPresent
 
 resources:
@@ -22,6 +22,15 @@ tolerations: []
 affinity: {}
 podLabels: {}
 podAnnotations: {}
+
+metrics:
+  # Serve Prometheus metrics on /metrics and create a Service for scraping them.
+  enabled: false
+  port: 8080
+  service:
+    # Added to the default prometheus.io/scrape and prometheus.io/port annotations; values set here take precedence.
+    annotations: {}
+
 securityContext:
   readOnlyRootFilesystem: true
   runAsNonRoot: true

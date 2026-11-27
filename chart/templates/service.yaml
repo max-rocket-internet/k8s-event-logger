@@ -1,0 +1,26 @@
+{{- if .Values.metrics.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "k8s-event-logger.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ include "k8s-event-logger.name" . }}
+    {{- include "k8s-event-logger.labels" . | nindent 4 }}
+  {{- $annotations := dict "prometheus.io/scrape" "true" "prometheus.io/port" (toString .Values.metrics.port) }}
+  {{- range $key, $value := .Values.metrics.service.annotations }}
+  {{- $_ := set $annotations $key (toString $value) }}
+  {{- end }}
+  annotations:
+    {{- toYaml $annotations | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: {{ include "k8s-event-logger.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  ports:
+    - name: metrics
+      port: {{ .Values.metrics.port }}
+      targetPort: metrics
+      protocol: TCP
+{{- end }}
