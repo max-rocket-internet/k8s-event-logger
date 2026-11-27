@@ -30,7 +30,7 @@ The following table lists the configurable parameters for this chart and their d
 | -------------------------|--------------------------------------|--------------------------------------------------------|
 | `resources`              | Resources for the overprovision pods | `{}`                                                   |
 | `image.repository`       | Image repository                     | `maxrocketinternet/k8s-event-logger`                   |
-| `image.tag`              | Image tag                            | `2.3`                                                  |
+| `image.tag`              | Image tag                            | `3.1`                                                  |
 | `image.pullPolicy`       | Container pull policy                | `IfNotPresent`                                         |
 | `affinity`               | Map of node/pod affinities           | `{}`                                                   |
 | `nodeSelector`           | Node labels for pod assignment       | `{}`                                                   |
@@ -42,6 +42,9 @@ The following table lists the configurable parameters for this chart and their d
 | `env.KUBERNETES_API_URL` | URL of the k8s API in your cluster   | `https://172.20.0.1:443`                               |
 | `env.CA_FILE`            | Path to the service account CA file  | `/var/run/secrets/kubernetes.io/serviceaccount/ca.crt` |
 | `podLabels`              | Additional labels to use for pods    | `{}`                                                   |
+| `metrics.enabled`        | Serve Prometheus metrics on `/metrics` and create a Service with `prometheus.io/scrape` and `prometheus.io/port` annotations | `false` |
+| `metrics.port`           | Port of the metrics endpoint and the Service | `8080`                                         |
+| `metrics.service.annotations` | Extra Service annotations; they take precedence over the defaults | `{}`                  |
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install` or provide a YAML file containing the values for the above parameters:
 

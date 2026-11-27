@@ -41,9 +41,19 @@ spec:
           - name: {{ $key }}
             value: {{ $value | quote }}
 {{- end }}
-          {{- with .Values.args }}
+          {{- $args := .Values.args | default list }}
+          {{- if .Values.metrics.enabled }}
+          {{- $args = append $args (printf "-metrics-address=:%d" (int .Values.metrics.port)) }}
+          {{- end }}
+          {{- with $args }}
           args:
             {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- if .Values.metrics.enabled }}
+          ports:
+            - name: metrics
+              containerPort: {{ .Values.metrics.port }}
+              protocol: TCP
           {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
